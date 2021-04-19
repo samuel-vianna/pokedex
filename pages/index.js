@@ -1,65 +1,145 @@
-import Head from 'next/head'
-import styles from '../styles/Home.module.css'
+// import Head from 'next/head'
+import { useState, useEffect } from 'react';
+import Search from 'react-search';
+import Select from 'react-select'
+import { methodGET } from './api/api'
+import styles from '../styles/Styles.module.css';
+import $, { data } from 'jquery';
 
 export default function Home() {
+
+  const [data, setData] = useState([])
+  const url = 'https://pokeapi.co/api/v2/'
+
+  useEffect(() => {
+    methodGET(url + 'pokemon?limit=151').then((result) => {
+      let aux = []
+
+      Object.keys(result.results).map((x, i) => {
+        aux.push({
+          label: result.results[x].name,
+          value: result.results[x].url
+        })
+      })
+
+      setData(aux)
+    })
+  }, [])
+
   return (
-    <div className={styles.container}>
-      <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+    <>
+      <div className={styles.main_container}>
 
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
+        <div id={styles.title}>
+          <h1>Pokedex</h1>
         </div>
-      </main>
 
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
-      </footer>
-    </div>
+        <PokeSearch data={data} />
+
+      </div>
+
+      <footer id={styles.footer}>Desenvolvido por Samuel Vianna</footer>
+    </>
   )
+}
+
+export function PokeSearch(props) {
+  const [url, setUrl] = useState()
+  return (
+    <>
+      <div id={styles.list}>
+        <Select placeholder='Escolha um Pokemon' options={props.data}
+          onChange={(e) => { setUrl(e.value) }}
+        />
+      </div>
+
+      <PokeInfo url={url} />
+    </>
+  )
+}
+
+export function PokeInfo(props) {
+
+  const [data, setData] = useState([])
+  const url = props.url
+
+  useEffect(() => {
+    if (url !== undefined) {
+      methodGET(url).then((result) => {
+        setData(result)
+      })
+    }
+  }, [url])
+
+  return (
+    <>
+      <div className={styles.sub_container}>
+
+        <div id={styles.name}>
+          <h2>{data.name}</h2>
+        </div>
+
+        <div className={styles.box}>
+
+          <div id='left_side'>
+
+            <div >
+              <h4 className={styles.subtitle}>Stauts</h4>
+              <RenderTable info={data.stats} desc='stat' />
+            </div>
+
+          </div>
+
+          <div id='right_side'>
+
+            <div >
+              <h4 className={styles.subtitle}>Tipo</h4>
+              <RenderTable info={data.types} desc='type' />
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </>
+  )
+}
+
+export function RenderTable(props) {
+
+  let aux = []
+
+  if (props.info !== undefined && props.stats !== null) {
+    switch (props.desc) {
+      case 'stat':
+        Object.keys(props.info).map((x) => {
+          aux.push(
+            <tr key={props.info[x].stat.name}>
+              <td>{props.info[x].stat.name}</td>
+              <td>{props.info[x].base_stat}</td>
+            </tr>
+          )
+        })
+        break;
+      case 'type':
+        Object.keys(props.info).map((x) => {
+          aux.push(
+            <tr key={props.info[x].type.name}>
+              <td>{props.info[x].type.name}</td>
+            </tr>
+          )
+        })
+    }
+
+  }
+
+  return (
+    <table className={styles.table}>
+      <hr></hr>
+      <div>{aux}</div>
+      <hr></hr>
+    </table>
+  )
+
 }
